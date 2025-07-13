@@ -28,7 +28,7 @@ jobs:
       # Step 4: Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t shunnualisha8980/medusa-store:latest .
+          docker build -t ronikgandhi/medusa-store:latest .
 
       # Step 5: Push Docker image to Docker Hub
       - name: Push Docker image to Docker Hub
@@ -46,8 +46,8 @@ jobs:
       # Step 7: Pull Docker image (for ECS)
       - name: Pull Docker image from Docker Hub
         run: |
-          docker pull shunnualisha8980/medusa-store:latest
-          echo "Pulled image: shunnualisha8980/medusa-store:latest"
+          docker pull ronikgandhi/medusa-store:latest
+          echo "Pulled image: ronikgandhi/medusa-store:latest"
 
       # Step 8: Update ECS task definition
       - name: Update ECS task definition
