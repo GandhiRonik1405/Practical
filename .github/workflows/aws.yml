@@ -85,6 +85,16 @@ jobs:
           echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
 
 
+      - name: Update ECS service
+        run: |
+          echo "Updating ECS service to use new task definition ARN: ${{ steps.register-task-def.outputs.task_definition_arn }}"
+          aws ecs update-service \
+            --cluster medusa-cluster \
+            --service medusa-service \
+            --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
+            --force-new-deployment \
+            --region us-east-1
+
       # # Step 9: Update ECS service
       # - name: Update ECS service
       #   run: |
