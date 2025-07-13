@@ -70,63 +70,40 @@ jobs:
       #     echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
       
 # Example in context
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      # ... previous steps
-
-      # ✅ NEW Step: Create ECS task definition JSON
-      - name: Write ECS task definition file
-        run: |
-          cat > ecs-task-definition.json <<EOF
-          {
-            "family": "medusa-task",
-            "networkMode": "awsvpc",
-            "containerDefinitions": [
-              {
-                "name": "medusa-container",
-                "image": "ronikgandhi/medusa-store:latest",
-                "essential": true,
-                "portMappings": [
-                  {
-                    "containerPort": 3000,
-                    "hostPort": 3000
-                  }
-                ]
-              }
-            ],
-            "requiresCompatibilities": ["FARGATE"],
-            "cpu": "256",
-            "memory": "512"
-          }
-          EOF
-
-      # ✅ Next step: Register ECS task definition
-      - name: Register ECS task definition
-        id: register-task-def
-        run: |
-          NEW_TASK_DEF=$(aws ecs register-task-definition \
-            --cli-input-json file://ecs-task-definition.json \
-            --region us-east-1)
-
-          echo "$NEW_TASK_DEF"
-
-          NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
-
-          echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
 
 
+- name: Register ECS task definition
+  id: register-task-def
+  run: |
+    NEW_TASK_DEF=$(aws ecs register-task-definition \
+      --cli-input-json file://ecs-task-definition.json \
+      --region us-east-1)
 
-      - name: Update ECS service
-        run: |
-          echo "Updating ECS service to use new task definition ARN: ${{ steps.register-task-def.outputs.task_definition_arn }}"
-          aws ecs update-service \
-            --cluster medusa-cluster \
-            --service medusa-service \
-            --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
-            --force-new-deployment \
-            --region us-east-1
+    echo "$NEW_TASK_DEF"
+
+    NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
+
+    echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
+- name: Debug output
+  run: echo "Task Definition ARN: ${{ steps.register-task-def.outputs.task_definition_arn }}"
+
+- name: Update ECS service
+  run: |
+    aws ecs update-service \
+      --cluster medusa-cluster \
+      --service medusa-service \
+      --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
+      --force-new-deployment \
+      --region us-east-1
+
+- name: Wait for ECS service to stabilize
+  run: |
+    aws ecs wait services-stable \
+      --cluster medusa-cluster \
+      --services medusa-service \
+      --region us-east-1
+
 
       # # Step 9: Update ECS service
       # - name: Update ECS service
@@ -138,14 +115,14 @@ jobs:
       #       --force-new-deployment \
       #       --region us-east-1
       #     echo "Updated ECS service"
-      - name: Update ECS service
-        run: |
-          aws ecs update-service \
-            --cluster medusa-cluster \
-            --service medusa-service \
-            --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
-            --force-new-deployment \
-            --region us-east-1
+      # - name: Update ECS service
+      #   run: |
+      #     aws ecs update-service \
+      #       --cluster medusa-cluster \
+      #       --service medusa-service \
+      #       --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
+      #       --force-new-deployment \
+      #       --region us-east-1
  
 
       # Step 10: Wait for ECS service to stabilize
