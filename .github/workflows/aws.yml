@@ -69,7 +69,40 @@ jobs:
 
       #     echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
       
-# ✅ Step 8: Register ECS task definition using your JSON
+# Example in context
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # ... previous steps
+
+      # ✅ NEW Step: Create ECS task definition JSON
+      - name: Write ECS task definition file
+        run: |
+          cat > ecs-task-definition.json <<EOF
+          {
+            "family": "medusa-task",
+            "networkMode": "awsvpc",
+            "containerDefinitions": [
+              {
+                "name": "medusa-container",
+                "image": "ronikgandhi/medusa-store:latest",
+                "essential": true,
+                "portMappings": [
+                  {
+                    "containerPort": 3000,
+                    "hostPort": 3000
+                  }
+                ]
+              }
+            ],
+            "requiresCompatibilities": ["FARGATE"],
+            "cpu": "256",
+            "memory": "512"
+          }
+          EOF
+
+      # ✅ Next step: Register ECS task definition
       - name: Register ECS task definition
         id: register-task-def
         run: |
@@ -81,8 +114,8 @@ jobs:
 
           NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
 
-          echo "New Task Definition ARN: $NEW_TASK_DEF_ARN"
           echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
 
 
       - name: Update ECS service
