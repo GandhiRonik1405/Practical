@@ -80,17 +80,27 @@ jobs:
           echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
 
 
+      # # Step 9: Update ECS service
+      # - name: Update ECS service
+      #   run: |
+      #     aws ecs update-service \
+      #       --cluster medusa-cluster \
+      #       --service medusa-service \
+      #       --task-definition ${{ steps.update-task-def.outputs.task_definition_arn }} \
+      #       --force-new-deployment \
+      #       --region us-east-1
+      #     echo "Updated ECS service"
       # Step 9: Update ECS service
       - name: Update ECS service
         run: |
           aws ecs update-service \
             --cluster medusa-cluster \
             --service medusa-service \
-            --task-definition ${{ steps.update-task-def.outputs.task_definition_arn }} \
+            --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
             --force-new-deployment \
             --region us-east-1
           echo "Updated ECS service"
-
+        
       # Step 10: Wait for ECS service to stabilize
       - name: Wait for ECS service to stabilize
         run: |
