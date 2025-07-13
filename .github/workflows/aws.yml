@@ -68,15 +68,18 @@ jobs:
       #       | jq -r '.taskDefinition.taskDefinitionArn')
 
       #     echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
-
-      # Step 8: Register ECS task definition
+      
       - name: Register ECS task definition
         id: register-task-def
         run: |
-          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+          NEW_TASK_DEF=$(aws ecs register-task-definition \
             --cli-input-json file://ecs-task-definition.json \
-            --region us-east-1 \
-            | jq -r '.taskDefinition.taskDefinitionArn')
+            --region us-east-1)
+      
+          echo "$NEW_TASK_DEF"
+      
+          NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
+      
           echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
 
 
@@ -90,7 +93,6 @@ jobs:
       #       --force-new-deployment \
       #       --region us-east-1
       #     echo "Updated ECS service"
-      # Step 9: Update ECS service
       - name: Update ECS service
         run: |
           aws ecs update-service \
@@ -99,8 +101,8 @@ jobs:
             --task-definition ${{ steps.register-task-def.outputs.task_definition_arn }} \
             --force-new-deployment \
             --region us-east-1
-          echo "Updated ECS service"
-        
+ 
+
       # Step 10: Wait for ECS service to stabilize
       - name: Wait for ECS service to stabilize
         run: |
