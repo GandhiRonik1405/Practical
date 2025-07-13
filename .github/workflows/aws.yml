@@ -49,25 +49,36 @@ jobs:
           docker pull ronikgandhi/medusa-store:latest
           echo "Pulled image: ronikgandhi/medusa-store:latest"
 
-      # Step 8: Update ECS task definition
-      - name: Update ECS task definition
-        id: update-task-def
+      # # Step 8: Update ECS task definition
+      # - name: Update ECS task definition
+      #   id: update-task-def
+      #   run: |
+      #     TASK_DEF=$(aws ecs describe-task-definition \
+      #       --task-definition medusa-task \
+      #       --region us-east-1)
+
+      #     NEW_TASK_DEF=$(echo "$TASK_DEF" | jq \
+      #       '.taskDefinition |
+      #       .containerDefinitions[0].image = "ronikgandhi/medusa-store:latest" |
+      #       del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+
+      #     NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+      #       --region us-east-1 \
+      #       --cli-input-json "$NEW_TASK_DEF" \
+      #       | jq -r '.taskDefinition.taskDefinitionArn')
+
+      #     echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
+      # Step 8: Register ECS task definition
+      - name: Register ECS task definition
+        id: register-task-def
         run: |
-          TASK_DEF=$(aws ecs describe-task-definition \
-            --task-definition medusa-task \
-            --region us-east-1)
-
-          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq \
-            '.taskDefinition |
-            .containerDefinitions[0].image = "ronikgandhi/medusa-store:latest" |
-            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
-
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://ecs-task-definition.json \
             --region us-east-1 \
-            --cli-input-json "$NEW_TASK_DEF" \
             | jq -r '.taskDefinition.taskDefinitionArn')
-
           echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
 
       # Step 9: Update ECS service
       - name: Update ECS service
