@@ -9,33 +9,41 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      ECS_CLUSTER: medusa-cluster
+      ECS_SERVICE: medusa-service
+      CONTAINER_NAME: medusa-container
+      ECS_TD: ecs-task-definition.json
+
     steps:
-      # 1️⃣ Checkout
+      # ✅ Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Docker Buildx
+      # ✅ Setup Docker
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3️⃣ Docker Hub login
+      # ✅ Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 4️⃣ Build image
+      # ✅ Build Docker image
       - name: Build Docker image
+        id: build-image
         run: |
           docker build -t ronikgandhi/medusa-store:latest .
+          echo "image=ronikgandhi/medusa-store:latest" >> $GITHUB_OUTPUT
 
-      # 5️⃣ Push image
+      # ✅ Push Docker image
       - name: Push Docker image to Docker Hub
         run: |
           docker push ronikgandhi/medusa-store:latest
 
-      # 6️⃣ Configure AWS
+      # ✅ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -43,7 +51,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # ✅ 7️⃣ Write task definition template
+      # ✅ Write ECS task definition JSON
       - name: Write ECS task definition file
         run: |
           cat > ecs-task-definition.json <<EOF
@@ -69,20 +77,20 @@ jobs:
           }
           EOF
 
-      # ✅ 8️⃣ Fill new image & render
-      - name: Fill in new image
-        id: render-task
+      # ✅ Fill in the new image ID in the ECS task definition
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-1
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ecs-task-definition.json
-          container-name: medusa-container
-          image: ronikgandhi/medusa-store:latest
+          task-definition: ${{ env.ECS_TD }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
 
-      # ✅ 9️⃣ Deploy to ECS (register + update-service)
-      - name: Deploy to ECS
+      # ✅ Deploy the new task definition to ECS service
+      - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.render-task.outputs.task-definition }}
-          cluster: medusa-cluster
-          service: medusa-service
+          task-definition: ${{ steps.task-def-1.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
