@@ -69,17 +69,19 @@ jobs:
 
       #     echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
       
+# ✅ Step 8: Register ECS task definition using your JSON
       - name: Register ECS task definition
         id: register-task-def
         run: |
           NEW_TASK_DEF=$(aws ecs register-task-definition \
             --cli-input-json file://ecs-task-definition.json \
             --region us-east-1)
-      
+
           echo "$NEW_TASK_DEF"
-      
+
           NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
-      
+
+          echo "New Task Definition ARN: $NEW_TASK_DEF_ARN"
           echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
 
 
